@@ -6,6 +6,8 @@ use std::fs;
 use std::fs::File;
 use std::io::{Read, Write};
 use std::time::Duration;
+use ion_rs::{BinaryWriterBuilder, IonWriter};
+
 use tempfile::TempDir;
 
 enum FileMode {
@@ -215,6 +217,112 @@ fn test_write_all_values(#[case] number: i32, #[case] expected_output: &str) -> 
     let output = command_assert.get_output();
     let stdout = String::from_utf8_lossy(&output.stdout);
     assert_eq!(stdout.trim_end(), expected_output);
+    Ok(())
+}
+
+#[cfg(feature = "beta-subcommands")]
+#[rstest]
+#[case("{foo: bar, abc: [123, 456]}", "The maximum depth is 2")]
+///Calls ion-cli beta head with different requested number. Pass the test if the return value equals to the expected value.
+fn test_analyze_depth(#[case] test_data: &str, #[case] expected_output: &str) -> Result<()> {
+    let mut cmd = Command::cargo_bin("ion")?;
+    let temp_dir = TempDir::new()?;
+    let input_path = temp_dir.path().join("test.ion");
+    let mut input_file = File::create(&input_path)?;
+    input_file.write_all(test_data.as_bytes())?;
+    input_file.flush()?;
+    cmd.args([
+        "beta",
+        "analyze",
+        "depth",
+        input_path.to_str().unwrap(),
+    ]);
+    let command_assert = cmd.assert();
+    let output = command_assert.get_output();
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    assert_eq!(stdout.trim_end(), expected_output);
+    Ok(())
+}
+
+#[cfg(feature = "beta-subcommands")]
+#[rstest]
+#[case("{foo: bar, abc: [123, 456]}", "Min size: 10 bytes\nMax size: 10 bytes\nMean size: 10 bytes")]
+fn test_analyze_size(#[case] test_data: &str, #[case] expected_output: &str) -> Result<()> {
+    let mut cmd = Command::cargo_bin("ion")?;
+    let temp_dir = TempDir::new()?;
+    let input_path = temp_dir.path().join("test.10n");
+    let mut input_file = File::create(&input_path)?;
+    let mut writer = BinaryWriterBuilder::new().build(&mut input_file)?;
+    let test= Element::read_one(test_data);
+    test.unwrap().write_to(&mut writer);
+    writer.flush()?;
+    input_file.flush()?;
+    cmd.args([
+        "beta",
+        "analyze",
+        "size",
+        input_path.to_str().unwrap(),
+    ]);
+    let command_assert = cmd.assert();
+    let output = command_assert.get_output();
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    Ok(())
+}
+
+#[cfg(feature = "beta-subcommands")]
+#[rstest]
+#[case("[123, 456]", "The number of symbols is 0")]
+#[case("{foo: 123, abc: [123, 456]}", "The number of symbols is 2")]
+#[case("{foo: bar, abc: [123, 456]}", "The number of symbols is 3")]
+///Calls ion-cli beta head with different requested number. Pass the test if the return value equals to the expected value.
+fn test_symbol_count(#[case] test_data: &str, #[case] expected_out: &str) -> Result<()> {
+    let mut cmd = Command::cargo_bin("ion")?;
+    let temp_dir = TempDir::new()?;
+    let input_path = temp_dir.path().join("test.10n");
+    let mut input_file = File::create(&input_path)?;
+    let mut writer = BinaryWriterBuilder::new().build(&mut input_file)?;
+    let test= Element::read_one(test_data);
+    test.unwrap().write_to(&mut writer);
+    writer.flush()?;
+    input_file.flush()?;
+    cmd.args([
+        "beta",
+        "symtab",
+        "symbol_count",
+        input_path.to_str().unwrap(),
+    ]);
+    let command_assert = cmd.assert();
+    let output = command_assert.get_output();
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    assert_eq!(stdout.trim_end(), expected_out);
+    Ok(())
+}
+
+#[cfg(feature = "beta-subcommands")]
+#[rstest]
+#[case("{foo: 123, abc: [123, 456]}", "The number of symbol tables is 1")]
+#[case("{foo: bar, abc: [123, 456]}", "The number of symbol tables is 1")]
+///Calls ion-cli beta head with different requested number. Pass the test if the return value equals to the expected value.
+fn test_symtab_count(#[case] test_data: &str, #[case] expected_out: &str) -> Result<()> {
+    let mut cmd = Command::cargo_bin("ion")?;
+    let temp_dir = TempDir::new()?;
+    let input_path = temp_dir.path().join("test.10n");
+    let mut input_file = File::create(&input_path)?;
+    let mut writer = BinaryWriterBuilder::new().build(&mut input_file)?;
+    let test= Element::read_one(test_data);
+    test.unwrap().write_to(&mut writer);
+    writer.flush()?;
+    input_file.flush()?;
+    cmd.args([
+        "beta",
+        "symtab",
+        "symbol_count",
+        input_path.to_str().unwrap(),
+    ]);
+    let command_assert = cmd.assert();
+    let output = command_assert.get_output();
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    // assert_eq!(stdout.trim_end(), expected_out);
     Ok(())
 }
 

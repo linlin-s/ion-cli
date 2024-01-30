@@ -1,4 +1,3 @@
-pub mod count;
 pub mod from;
 
 #[cfg(feature = "beta-subcommands")]
@@ -9,8 +8,9 @@ pub mod primitive;
 pub mod schema;
 pub mod symtab;
 pub mod to;
+pub mod analyze;
 
-use crate::commands::beta::count::CountCommand;
+
 use crate::commands::beta::from::FromNamespace;
 #[cfg(feature = "beta-subcommands")]
 use crate::commands::beta::generate::GenerateCommand;
@@ -18,6 +18,7 @@ use crate::commands::beta::head::HeadCommand;
 use crate::commands::beta::inspect::InspectCommand;
 use crate::commands::beta::primitive::PrimitiveCommand;
 use crate::commands::beta::schema::SchemaNamespace;
+use crate::commands::beta::analyze::AnalyzeNamespace;
 use crate::commands::beta::symtab::SymtabNamespace;
 use crate::commands::beta::to::ToNamespace;
 use crate::commands::IonCliCommand;
@@ -35,10 +36,10 @@ impl IonCliCommand for BetaNamespace {
 
     fn subcommands(&self) -> Vec<Box<dyn IonCliCommand>> {
         vec![
-            Box::new(CountCommand),
             Box::new(InspectCommand),
             Box::new(PrimitiveCommand),
             Box::new(SchemaNamespace),
+            Box::new(AnalyzeNamespace),
             Box::new(HeadCommand),
             Box::new(FromNamespace),
             Box::new(ToNamespace),
